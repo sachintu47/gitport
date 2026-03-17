@@ -1,5 +1,5 @@
 diff --git a/diff.c b/diff.c
-index a68ddd2..689cc66 100644
+index a68ddd2..48ccc6b 100644
 --- a/diff.c
 +++ b/diff.c
 @@ -4194,6 +4194,7 @@ int diff_populate_filespec(struct repository *r,
@@ -29,13 +29,21 @@ index a68ddd2..689cc66 100644
  		s->data = xmmap(NULL, s->size, PROT_READ, MAP_PRIVATE, fd, 0);
  		close(fd);
  		s->should_munmap = 1;
-@@ -4374,6 +4384,10 @@ static void prep_temp_blob(struct index_state *istate,
+@@ -4369,11 +4379,16 @@ static void prep_temp_blob(struct index_state *istate,
+ 	temp->tempfile = mks_tempfile_dt("git-blob-XXXXXX", base);
+ 	if (!temp->tempfile)
+ 		die_errno("unable to create temp-file");
+-	if (convert_to_working_tree(istate, path,
+-			(const char *)blob, (size_t)size, &buf, &meta)) {
++	int ret = convert_to_working_tree(istate, path,
++			(const char *)blob, (size_t)size, &buf, &meta);
++	if (ret) {
  		blob = buf.buf;
  		size = buf.len;
  	}
 +  
 +#ifdef __MVS__
-+  tag_file_as_working_tree_encoding(istate, path, temp->tempfile->fd);
++  tag_file_as_working_tree_encoding(istate, path, temp->tempfile->fd, ret);
 +#endif
  	if (write_in_full(temp->tempfile->fd, blob, size) < 0 ||
  	    close_tempfile_gently(temp->tempfile))

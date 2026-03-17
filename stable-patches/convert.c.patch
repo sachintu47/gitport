@@ -163,12 +163,14 @@ index c7d6a85..f3db530 100644
 +
 +#ifdef __MVS__
 +
-+void tag_file_as_working_tree_encoding(struct index_state *istate, char* path, int fd) {
++void tag_file_as_working_tree_encoding(struct index_state *istate, const char* path, int fd, int was_converted) {
 +        struct conv_attrs ca;
 +        convert_attrs(istate, &ca, path);
 +  if (ca.attr_action != CRLF_BINARY) {
-+    if (ca.working_tree_encoding)
-+      __chgfdcodeset(fd, ca.working_tree_encoding);
++    if (ca.working_tree_encoding) {
++      if (was_converted)
++        __chgfdcodeset(fd, ca.working_tree_encoding);
++    }
 +    else
 +      __chgfdccsid(fd, utf8_ccsid);
 +  }
