@@ -1,0 +1,37 @@
+diff --git a/apply.c b/apply.c
+index 3de4aa4..031a6e1 100644
+--- a/apply.c
++++ b/apply.c
+@@ -33,6 +33,7 @@
+ #include "read-cache.h"
+ #include "repository.h"
+ #include "rerere.h"
++#include "convert.h"
+ #include "apply.h"
+ #include "entry.h"
+ #include "setup.h"
+@@ -4446,12 +4447,23 @@ static int try_create_file(struct apply_state *state, const char *path,
+ 	if (fd < 0)
+ 		return 1;
+ 
+-	if (convert_to_working_tree(state->repo->index, path, buf, size, &nbuf, NULL)) {
++#ifdef __MVS__
++	__setfdbinary(fd);
++	__disableautocvt(fd);
++#endif
++
++	int ret = convert_to_working_tree(state->repo->index, path, buf, size, &nbuf, NULL);
++	if (ret > 0) {
+ 		size = nbuf.len;
+ 		buf  = nbuf.buf;
+ 	}
+ 
+ 	res = write_in_full(fd, buf, size) < 0;
++
++#ifdef __MVS__
++    tag_file_as_working_tree_encoding(state->repo->index, path, fd, ret);
++#endif
++
+ 	if (res)
+ 		error_errno(_("failed to write to '%s'"), path);
+ 	strbuf_release(&nbuf);

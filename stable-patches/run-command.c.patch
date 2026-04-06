@@ -1,0 +1,86 @@
+diff --git a/run-command.c b/run-command.c
+index e3e0247..ee3447b 100644
+--- a/run-command.c
++++ b/run-command.c
+@@ -19,6 +19,10 @@
+ #include "packfile.h"
+ #include "compat/nonblock.h"
+ 
++#ifdef __MVS__
++#include <zos.h>
++#endif
++
+ void child_process_init(struct child_process *child)
+ {
+ 	struct child_process blank = CHILD_PROCESS_INIT;
+@@ -695,6 +699,10 @@ int start_command(struct child_process *cmd)
+ 			str = "standard input";
+ 			goto fail_pipe;
+ 		}
++#ifdef __MVS__
++		__disableautocvt(fdin[0]);
++		__disableautocvt(fdin[1]);
++#endif
+ 		cmd->in = fdin[1];
+ 	}
+ 
+@@ -711,6 +719,10 @@ int start_command(struct child_process *cmd)
+ 			str = "standard output";
+ 			goto fail_pipe;
+ 		}
++#ifdef __MVS__
++		__disableautocvt(fdout[0]);
++		__disableautocvt(fdout[1]);
++#endif
+ 		cmd->out = fdout[0];
+ 	}
+ 
+@@ -727,13 +739,12 @@ int start_command(struct child_process *cmd)
+ 			else if (cmd->out)
+ 				close(cmd->out);
+ 			str = "standard error";
+-fail_pipe:
+-			error("cannot create %s pipe for %s: %s",
+-				str, cmd->args.v[0], strerror(failed_errno));
+-			child_process_clear(cmd);
+-			errno = failed_errno;
+-			return -1;
++			goto fail_pipe;
+ 		}
++#ifdef __MVS__
++		__disableautocvt(fderr[0]);
++		__disableautocvt(fderr[1]);
++#endif
+ 		cmd->err = fderr[0];
+ 	}
+ 
+@@ -953,6 +964,7 @@ int start_command(struct child_process *cmd)
+ #endif
+ 
+ 	if (cmd->pid < 0) {
++fail_pipe:
+ 		trace2_child_exit(cmd, -1);
+ 
+ 		if (need_in)
+@@ -1162,6 +1174,10 @@ int start_async(struct async *async)
+ 				close(async->out);
+ 			return error_errno("cannot create pipe");
+ 		}
++#ifdef __MVS__
++		__disableautocvt(fdin[0]);
++		__disableautocvt(fdin[1]);
++#endif
+ 		async->in = fdin[1];
+ 	}
+ 
+@@ -1174,6 +1190,10 @@ int start_async(struct async *async)
+ 				close(async->in);
+ 			return error_errno("cannot create pipe");
+ 		}
++#ifdef __MVS__
++		__disableautocvt(fdout[0]);
++		__disableautocvt(fdout[1]);
++#endif
+ 		async->out = fdout[0];
+ 	}
+ 
