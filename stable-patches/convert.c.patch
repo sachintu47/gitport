@@ -1,5 +1,5 @@
 diff --git a/convert.c b/convert.c
-index c7d6a85..1c49d9f 100644
+index c7d6a85..56b806b 100644
 --- a/convert.c
 +++ b/convert.c
 @@ -6,6 +6,7 @@
@@ -21,12 +21,12 @@ index c7d6a85..1c49d9f 100644
  
  /*
   * convert.c - convert a file when checking it out and checking it in.
-@@ -385,12 +390,16 @@ static int check_roundtrip(const char *enc_name)
+@@ -385,12 +390,17 @@ static int check_roundtrip(const char *enc_name)
  static const char *default_encoding = "UTF-8";
  
  static int encode_to_git(const char *path, const char *src, size_t src_len,
 -			 struct strbuf *buf, const char *enc, int conv_flags)
-+			 struct strbuf *buf, const char *enc,
++			 struct strbuf *buf, const char *enc, 
 +			 enum convert_crlf_action attr_action, int conv_flags)
  {
  	char *dst;
@@ -36,46 +36,34 @@ index c7d6a85..1c49d9f 100644
 +	if (attr_action == CRLF_BINARY) {
 +		return 0;
 +	}
++
  	/*
  	 * No encoding is specified or there is nothing to encode.
  	 * Tell the caller that the content was not modified.
-@@ -411,6 +420,12 @@ static int encode_to_git(const char *path, const char *src, size_t src_len,
+@@ -411,6 +421,12 @@ static int encode_to_git(const char *path, const char *src, size_t src_len,
  		return 0;
  
  	trace_encoding("source", path, enc, src, src_len);
-+#ifdef __MVS__
-+  // If UTF CCSID == 819 (ISO8859-1), do not convert ISO8859-1 tagged files
-+  if (utf8_ccsid == 819 && strcasecmp("ISO8859-1", enc) == 0)
-+	return 0;
-+#endif
 +
++	#ifdef __MVS__
++		// If UTF CCSID == 819 (ISO8859-1), do not convert ISO8859-1 tagged files
++			if (utf8_ccsid == 819 && strcasecmp("ISO8859-1", enc) == 0)
++				return 0;
++	#endif
  	dst = reencode_string_len(src, src_len, default_encoding, enc,
  				  &dst_len);
  	if (!dst) {
-@@ -420,12 +435,32 @@ static int encode_to_git(const char *path, const char *src, size_t src_len,
+@@ -420,12 +436,19 @@ static int encode_to_git(const char *path, const char *src, size_t src_len,
  		 * would fail and we would leave the user with a messed-up
  		 * working tree. Let's try to avoid this by screaming loud.
  		 */
 -		const char* msg = _("failed to encode '%s' from %s to %s");
-+	       if (attr_action == CRLF_BINARY) {
++		if (attr_action == CRLF_BINARY) {
 +			return 0;
 +		}
-+		size_t line = 1;
-+		size_t col = 1;
-+		unsigned char bad_char = 0;
-+		for (size_t i = 0; i < src_len; i++) {
-+			if (src[i] == '\n') {
-+				line++;
-+				col = 1;
-+			} else {
-+				col++;
-+			}
-+			/* Try to find the first character that iconv would reject */
-+			if ((unsigned char)src[i] > 0x7F) {
-+				bad_char = (unsigned char)src[i];
-+				break;
-+			}
-+		}
++		size_t line, col;
++		unsigned char bad_char;
++		find_first_non_ascii(src, src_len, &line, &col, &bad_char);
 +
 +		const char* msg = _("failed to encode '%s' from %s to %s at line %zu, col %zu (char: 0x%02x)");
  		if (die_on_error)
@@ -89,7 +77,7 @@ index c7d6a85..1c49d9f 100644
  		}
  	}
  	trace_encoding("destination", path, default_encoding, dst, dst_len);
-@@ -476,10 +511,14 @@ static int encode_to_git(const char *path, const char *src, size_t src_len,
+@@ -476,10 +499,14 @@ static int encode_to_git(const char *path, const char *src, size_t src_len,
  }
  
  static int encode_to_worktree(const char *path, const char *src, size_t src_len,
@@ -99,43 +87,29 @@ index c7d6a85..1c49d9f 100644
  {
  	char *dst;
  	size_t dst_len;
-+if (attr_action == CRLF_BINARY) {
-+    return 0;
-+}
++	if (attr_action == CRLF_BINARY) {
++		return 0;
++	}
  
  	/*
  	 * No encoding is specified or there is nothing to encode.
-@@ -491,9 +530,26 @@ static int encode_to_worktree(const char *path, const char *src, size_t src_len,
+@@ -491,9 +518,12 @@ static int encode_to_worktree(const char *path, const char *src, size_t src_len,
  	dst = reencode_string_len(src, src_len, enc, default_encoding,
  				  &dst_len);
  	if (!dst) {
 -		error(_("failed to encode '%s' from %s to %s"),
 -		      path, default_encoding, enc);
 -		return 0;
-+		size_t line = 1;
-+		size_t col = 1;
-+		unsigned char bad_char = 0;
-+		for (size_t i = 0; i < src_len; i++) {
-+			if (src[i] == '\n') {
-+				line++;
-+				col = 1;
-+			} else {
-+				col++;
-+			}
-+			/* Try to find the first character that iconv would reject for IBM-1047 */
-+			/* (In a real implementation, we could call iconv in a loop here) */
-+			if ((unsigned char)src[i] > 0x7F) {
-+				bad_char = (unsigned char)src[i];
-+				break;
-+			}
-+		}
++		size_t line, col;
++		unsigned char bad_char;
++		find_first_non_ascii(src, src_len, &line, &col, &bad_char);
 +		error(_("failed to encode '%s' from %s to %s at line %zu, col %zu (char: 0x%02x)"),
 +		      path, default_encoding, enc, line, col, bad_char);
 +		return -1;
  	}
  
  	strbuf_attach(buf, dst, dst_len, dst_len + 1);
-@@ -1316,18 +1372,40 @@ static int git_path_check_ident(struct attr_check_item *check)
+@@ -1316,18 +1346,40 @@ static int git_path_check_ident(struct attr_check_item *check)
  
  static struct attr_check *check;
  
@@ -152,7 +126,7 @@ index c7d6a85..1c49d9f 100644
 +	/* Map OS/390 to 'zos' for platform-specific encoding attributes */
 +	if (!strcmp(uname_info.sysname, "OS/390"))
 +		return "zos";
-+	
++
 +	xsnprintf(platform_name, sizeof(platform_name), "%s", uname_info.sysname);
 +	return platform_name;
 +}
@@ -176,16 +150,17 @@ index c7d6a85..1c49d9f 100644
  
  	git_check_attr(istate, path, check);
  	ccheck = check->items;
-@@ -1348,6 +1426,8 @@ void convert_attrs(struct index_state *istate,
+@@ -1348,6 +1400,9 @@ void convert_attrs(struct index_state *istate,
  			ca->crlf_action = CRLF_TEXT_CRLF;
  	}
  	ca->working_tree_encoding = git_path_check_encoding(ccheck + 5);
 +	if (git_path_check_encoding(ccheck + 6))
-+	    ca->working_tree_encoding = git_path_check_encoding(ccheck + 6);
++		ca->working_tree_encoding = git_path_check_encoding(ccheck + 6);
++
  
  	/* Save attr and make a decision for action */
  	ca->attr_action = ca->crlf_action;
-@@ -1439,20 +1519,20 @@ int convert_to_git(struct index_state *istate,
+@@ -1439,13 +1494,13 @@ int convert_to_git(struct index_state *istate,
  	if (!ret && ca.drv && ca.drv->required)
  		die(_("%s: clean filter '%s' failed"), path, ca.drv->name);
  
@@ -202,15 +177,7 @@ index c7d6a85..1c49d9f 100644
  		src = dst->buf;
  		len = dst->len;
  	}
- 
- 	if (!(conv_flags & CONV_EOL_KEEP_CRLF)) {
- 		ret |= crlf_to_git(istate, path, src, len, dst, ca.crlf_action, conv_flags);
--		if (ret && dst) {
-+		if (ret > 0 && dst) {
- 			src = dst->buf;
- 			len = dst->len;
- 		}
-@@ -1472,7 +1552,7 @@ void convert_to_git_filter_fd(struct index_state *istate,
+@@ -1472,7 +1527,7 @@ void convert_to_git_filter_fd(struct index_state *istate,
  	if (!apply_filter(path, NULL, 0, fd, dst, ca.drv, CAP_CLEAN, NULL, NULL))
  		die(_("%s: clean filter '%s' failed"), path, ca.drv->name);
  
@@ -219,7 +186,7 @@ index c7d6a85..1c49d9f 100644
  	crlf_to_git(istate, path, dst->buf, dst->len, dst, ca.crlf_action, conv_flags);
  	ident_to_git(dst->buf, dst->len, dst, ca.ident);
  }
-@@ -1487,7 +1567,7 @@ static int convert_to_working_tree_ca_internal(const struct conv_attrs *ca,
+@@ -1487,7 +1542,7 @@ static int convert_to_working_tree_ca_internal(const struct conv_attrs *ca,
  	int ret = 0, ret_filter = 0;
  
  	ret |= ident_to_worktree(src, len, dst, ca->ident);
@@ -228,7 +195,7 @@ index c7d6a85..1c49d9f 100644
  		src = dst->buf;
  		len = dst->len;
  	}
-@@ -1498,16 +1578,19 @@ static int convert_to_working_tree_ca_internal(const struct conv_attrs *ca,
+@@ -1498,16 +1553,19 @@ static int convert_to_working_tree_ca_internal(const struct conv_attrs *ca,
  	 */
  	if ((ca->drv && (ca->drv->smudge || ca->drv->process)) || !normalizing) {
  		ret |= crlf_to_worktree(src, len, dst, ca->crlf_action);
@@ -251,7 +218,7 @@ index c7d6a85..1c49d9f 100644
  	}
  
  	ret_filter = apply_filter(
-@@ -1546,7 +1629,7 @@ int renormalize_buffer(struct index_state *istate, const char *path,
+@@ -1546,7 +1604,7 @@ int renormalize_buffer(struct index_state *istate, const char *path,
  	convert_attrs(istate, &ca, path);
  	ret = convert_to_working_tree_ca_internal(&ca, path, src, len, dst, 1,
  						  NULL, NULL);
@@ -260,7 +227,7 @@ index c7d6a85..1c49d9f 100644
  		src = dst->buf;
  		len = dst->len;
  	}
-@@ -2058,3 +2141,96 @@ enum conv_attrs_classification classify_conv_attrs(const struct conv_attrs *ca)
+@@ -2058,3 +2116,96 @@ enum conv_attrs_classification classify_conv_attrs(const struct conv_attrs *ca)
  
  	return CA_CLASS_STREAMABLE;
  }
@@ -269,31 +236,31 @@ index c7d6a85..1c49d9f 100644
 +#ifdef __MVS__
 +
 +void tag_file_as_working_tree_encoding(struct index_state *istate, const char* path, int fd, int was_converted) {
-+  struct stat st;
-+  if (fstat(fd, &st) < 0 || !S_ISREG(st.st_mode))
-+    return;
++	struct stat st;
++	if (fstat(fd, &st) < 0 || !S_ISREG(st.st_mode))
++		return;
 +
-+  if (was_converted < 0) {
-+    __chgfdccsid(fd, utf8_ccsid);
-+    __disableautocvt(fd);
-+    return;
-+  }
++	if (was_converted < 0) {
++		__chgfdccsid(fd, 1208);
++		__disableautocvt(fd);
++		return;
++	}
 +
-+  struct conv_attrs ca;
-+  convert_attrs(istate, &ca, path);
-+  if (ca.attr_action != CRLF_BINARY) {
-+    if (ca.working_tree_encoding) {
-+        __chgfdcodeset(fd, ca.working_tree_encoding);
-+    }
-+    else {
-+      __chgfdccsid(fd, utf8_ccsid);
-+    }
-+  }
-+  else {
-+    __setfdbinary(fd);
-+  }
++	struct conv_attrs ca;
++	convert_attrs(istate, &ca, path);
++	if (ca.attr_action != CRLF_BINARY) {
++		if (ca.working_tree_encoding) {
++ 			__chgfdcodeset(fd, ca.working_tree_encoding);
++		}
++		else {
++			__chgfdccsid(fd, utf8_ccsid);
++		}
++	}
++	else {
++		__setfdbinary(fd);
++	}
 +
-+  __disableautocvt(fd);
++	__disableautocvt(fd);
 +}
 +
 +void validate_codeset(struct index_state *istate, const char *path, int* autoconvertToASCII) {

@@ -1,12 +1,12 @@
 diff --git a/config.mak.uname b/config.mak.uname
-index d5112168a4..17716314c0 100644
+index 3c35ae3..bda092f 100644
 --- a/config.mak.uname
 +++ b/config.mak.uname
-@@ -639,12 +639,21 @@ ifeq ($(uname_S),NONSTOP_KERNEL)
+@@ -653,15 +653,24 @@ ifeq ($(uname_S),NONSTOP_KERNEL)
  	SHELL_PATH = /usr/coreutils/bin/bash
  endif
  ifeq ($(uname_S),OS/390)
-+	PERL_PATH = $(PERL_HOME)/bin/perl
++	PERL_PATH = $(PERL5_HOME)/bin/perl
 +	PERL_PATH_FOR_SCRIPTS = /bin/env perl
 +	SHELL_PATH = $(BASH_HOME)/bin/bash
 +	SHELL_PATH_FOR_SCRIPTS = /bin/env bash
@@ -24,4 +24,6 @@ index d5112168a4..17716314c0 100644
  	HAVE_STRINGS_H = YesPlease
 +	NEEDS_LIBICONV = YesPlease
 +	ICONVDIR = $(LIBICONV_HOME)
+ 	NEEDS_MODE_TRANSLATION = YesPlease
+ 	HAVE_ZOS_GET_EXECUTABLE_PATH = YesPlease
  endif

@@ -1,7 +1,6 @@
 #
 export ZOPEN_BUILD_LINE="STABLE"
 export ZOPEN_CATEGORIES="development source_control"
-export PERL_HOME="/home/haritha/zopen_23may/zopen/usr/local/zopen/perl/perl"
 
 # bump: git-version /GIT_VERSION="(.*)"/ https://github.com/git/git.git|*
 GIT_VERSION="2.53.0"

@@ -1,0 +1,15 @@
+diff --git a/utf8.h b/utf8.h
+index cf8ecb0..d80d85a 100644
+--- a/utf8.h
++++ b/utf8.h
+@@ -50,6 +50,10 @@ static inline char *reencode_string(const char *in,
+ 
+ int mbs_chrlen(const char **text, size_t *remainder_p, const char *encoding);
+ 
++void find_first_non_ascii(const char *src, size_t src_len, 
++			  size_t *line_out, size_t *col_out, 
++			  unsigned char *bad_char_out);
++
+ /*
+  * Returns true if the path would match ".git" after HFS case-folding.
+  * The path should be NUL-terminated, but we will match variants of both ".git\0"
