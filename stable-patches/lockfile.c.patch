@@ -1,15 +1,33 @@
 diff --git a/lockfile.c b/lockfile.c
-index 67082a9..ed44413 100644
+index 67082a9..d6977ae 100644
 --- a/lockfile.c
 +++ b/lockfile.c
-@@ -83,6 +83,11 @@ static int lock_file(struct lock_file *lk, const char *path, int flags,
+@@ -2,10 +2,13 @@
+  * Copyright (c) 2005, Junio C Hamano
+  */
+ 
++#define USE_THE_REPOSITORY_VARIABLE
++
+ #include "git-compat-util.h"
+ #include "abspath.h"
+ #include "gettext.h"
+ #include "lockfile.h"
++#include "environment.h"
+ 
+ /*
+  * path = absolute or relative path name
+@@ -83,6 +86,15 @@ static int lock_file(struct lock_file *lk, const char *path, int flags,
  
  	strbuf_addstr(&filename, LOCK_SUFFIX);
  	lk->tempfile = create_tempfile_mode(filename.buf, mode);
 +#ifdef __MVS__
 +    struct stat st;
-+	if (lk->tempfile && fstat(lk->tempfile->fd, &st) >= 0 && S_ISREG(st.st_mode))
-+		__setfdbinary(lk->tempfile->fd);
++	if (lk->tempfile && fstat(lk->tempfile->fd, &st) >= 0 && S_ISREG(st.st_mode)) {
++		if (flags & LOCK_TAG_TEXT)
++			__chgfdccsid(lk->tempfile->fd, utf8_ccsid);
++		else
++			__setfdbinary(lk->tempfile->fd);
++	}
 +#endif
  	strbuf_release(&filename);
  	return lk->tempfile ? lk->tempfile->fd : -1;

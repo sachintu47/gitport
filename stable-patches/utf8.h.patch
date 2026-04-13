@@ -1,9 +1,40 @@
 diff --git a/utf8.h b/utf8.h
-index cf8ecb0..d80d85a 100644
+index cf8ecb0..f06739b 100644
 --- a/utf8.h
 +++ b/utf8.h
-@@ -50,6 +50,10 @@ static inline char *reencode_string(const char *in,
+@@ -32,11 +32,19 @@ char *reencode_string_len(const char *in, size_t insz,
+ 			  const char *out_encoding,
+ 			  const char *in_encoding,
+ 			  size_t *outsz);
++char *reencode_string_len_translit(const char *in, size_t insz,
++			  const char *out_encoding,
++			  const char *in_encoding,
++			  size_t *outsz);
+ #else
+ static inline char *reencode_string_len(const char *a UNUSED, size_t b UNUSED,
+ 					const char *c UNUSED,
+ 					const char *d UNUSED, size_t *e)
+ { if (e) *e = 0; return NULL; }
++static inline char *reencode_string_len_translit(const char *a UNUSED, size_t b UNUSED,
++					const char *c UNUSED,
++					const char *d UNUSED, size_t *e)
++{ if (e) *e = 0; return NULL; }
+ #endif
  
+ static inline char *reencode_string(const char *in,
+@@ -48,8 +56,21 @@ static inline char *reencode_string(const char *in,
+ 				   NULL);
+ }
+ 
++static inline char *reencode_string_translit(const char *in,
++				    const char *out_encoding,
++				    const char *in_encoding)
++{
++	return reencode_string_len_translit(in, strlen(in),
++				   out_encoding, in_encoding,
++				   NULL);
++}
++
  int mbs_chrlen(const char **text, size_t *remainder_p, const char *encoding);
  
 +void find_first_non_ascii(const char *src, size_t src_len, 
