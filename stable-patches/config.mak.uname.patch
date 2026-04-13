@@ -1,14 +1,15 @@
 diff --git a/config.mak.uname b/config.mak.uname
-index 3c35ae3..bda092f 100644
+index 3c35ae3..d9aba56 100644
 --- a/config.mak.uname
 +++ b/config.mak.uname
-@@ -653,15 +653,24 @@ ifeq ($(uname_S),NONSTOP_KERNEL)
+@@ -653,15 +653,25 @@ ifeq ($(uname_S),NONSTOP_KERNEL)
  	SHELL_PATH = /usr/coreutils/bin/bash
  endif
  ifeq ($(uname_S),OS/390)
 +	PERL_PATH = $(PERL5_HOME)/bin/perl
 +	PERL_PATH_FOR_SCRIPTS = /bin/env perl
 +	SHELL_PATH = $(BASH_HOME)/bin/bash
++	TEST_SHELL_PATH = $(SHELL_PATH)
 +	SHELL_PATH_FOR_SCRIPTS = /bin/env bash
 +	PYTHON_PATH = /home/opnzos/local/pyz/bin/python
  	NO_SYS_POLL_H = YesPlease

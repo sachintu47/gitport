@@ -1,5 +1,5 @@
 diff --git a/entry.c b/entry.c
-index 7817aee362..e977570d5c 100644
+index 7817aee..69568f1 100644
 --- a/entry.c
 +++ b/entry.c
 @@ -85,8 +85,16 @@ static void remove_subtree(struct strbuf *path)
@@ -93,27 +93,3 @@ index 7817aee362..e977570d5c 100644
  		if (!to_tempfile)
  			fstat_done = fstat_checkout_output(fd, state, &st);
  		close(fd);
-@@ -486,6 +521,23 @@ int checkout_entry_ca(struct cache_entry *ce, struct conv_attrs *ca,
- 	static struct strbuf path = STRBUF_INIT;
- 	struct stat st;
- 	struct conv_attrs ca_buf;
-+#ifdef __MVS__
-+  const char* git_utf8_ccsid_str = getenv("GIT_UTF8_CCSID");
-+
-+  if (git_utf8_ccsid_str != NULL) {
-+      char* endptr;
-+      errno = 0;
-+      long conv = strtol(git_utf8_ccsid_str, &endptr, 10);
-+
-+      if (!conv) {
-+		perror("Error converting GIT_UTF8_CCSID to short");
-+      } else if (endptr == git_utf8_ccsid_str) {
-+		fprintf(stderr, "No digits were found in GIT_UTF8_CCSID\n");
-+      } else {
-+		utf8_ccsid = conv;
-+      }
-+  }
-+#endif
- 
- 	if (ce->ce_flags & CE_WT_REMOVE) {
- 		if (topath)
