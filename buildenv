@@ -12,6 +12,7 @@ export ZOPEN_STABLE_URL="https://github.com/git/git.git"
 export ZOPEN_STABLE_TAG="v${GIT_VERSION}"
 export ZOPEN_STABLE_DEPS="curl git make m4 perl autoconf automake help2man texinfo xz zlib openssl expat gettext gzip tar coreutils zoslib diffutils ncurses bash sed libpcre2 tar check_python gawk zusage libpsl libssh2 libiconv"
 
+export ZOPEN_CHECK_TIMEOUT="${ZOPEN_CHECK_NO_TIMEOUT}"
 #
 # Note the 'man' tarball release is numbered independently from the 'git' release.
 #
