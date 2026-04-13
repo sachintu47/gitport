@@ -1,0 +1,16 @@
+diff --git a/lockfile.h b/lockfile.h
+index 1bb9926..de6143c 100644
+--- a/lockfile.h
++++ b/lockfile.h
+@@ -148,6 +148,11 @@ struct lock_file {
+  */
+ #define LOCK_REPORT_ON_ERROR 4
+ 
++/*
++ * Tag the lockfile as text (UTF-8) on z/OS. If not set, the default is binary.
++ */
++#define LOCK_TAG_TEXT 8
++
+ /*
+  * Usually symbolic links in the destination path are resolved. This
+  * means that (1) the lockfile is created by adding ".lock" to the
