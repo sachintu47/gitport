@@ -18,8 +18,8 @@ index e3e0247..ee3447b 100644
  			goto fail_pipe;
  		}
 +#ifdef __MVS__
-+		__disableautocvt(fdin[0]);
-+		__disableautocvt(fdin[1]);
++		/* __disableautocvt(fdin[0]); */
++		/* __disableautocvt(fdin[1]); */
 +#endif
  		cmd->in = fdin[1];
  	}
@@ -29,8 +29,8 @@ index e3e0247..ee3447b 100644
  			goto fail_pipe;
  		}
 +#ifdef __MVS__
-+		__disableautocvt(fdout[0]);
-+		__disableautocvt(fdout[1]);
++		/* __disableautocvt(fdout[0]); */
++		/* __disableautocvt(fdout[1]); */
 +#endif
  		cmd->out = fdout[0];
  	}
@@ -48,8 +48,8 @@ index e3e0247..ee3447b 100644
 +			goto fail_pipe;
  		}
 +#ifdef __MVS__
-+		__disableautocvt(fderr[0]);
-+		__disableautocvt(fderr[1]);
++		/* __disableautocvt(fderr[0]); */
++		/* __disableautocvt(fderr[1]); */
 +#endif
  		cmd->err = fderr[0];
  	}
@@ -67,8 +67,8 @@ index e3e0247..ee3447b 100644
  			return error_errno("cannot create pipe");
  		}
 +#ifdef __MVS__
-+		__disableautocvt(fdin[0]);
-+		__disableautocvt(fdin[1]);
++		/* __disableautocvt(fdin[0]); */
++		/* __disableautocvt(fdin[1]); */
 +#endif
  		async->in = fdin[1];
  	}
@@ -78,8 +78,8 @@ index e3e0247..ee3447b 100644
  			return error_errno("cannot create pipe");
  		}
 +#ifdef __MVS__
-+		__disableautocvt(fdout[0]);
-+		__disableautocvt(fdout[1]);
++		/* __disableautocvt(fdout[0]); */
++		/* __disableautocvt(fdout[1]); */
 +#endif
  		async->out = fdout[0];
  	}

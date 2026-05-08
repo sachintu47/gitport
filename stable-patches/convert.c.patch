@@ -1,5 +1,5 @@
 diff --git a/convert.c b/convert.c
-index c7d6a85..c57c165 100644
+index c7d6a85..93518eb 100644
 --- a/convert.c
 +++ b/convert.c
 @@ -6,6 +6,7 @@
@@ -79,7 +79,7 @@ index c7d6a85..c57c165 100644
  		return 0;
  
  	/*
-@@ -411,8 +430,18 @@ static int encode_to_git(const char *path, const char *src, size_t src_len,
+@@ -411,8 +430,25 @@ static int encode_to_git(const char *path, const char *src, size_t src_len,
  		return 0;
  
  	trace_encoding("source", path, enc, src, src_len);
@@ -94,11 +94,18 @@ index c7d6a85..c57c165 100644
 +	if (!dst) {
 +		dst = reencode_string_len_translit(src, src_len, default_encoding, enc,
 +						  &dst_len);
++		if (dst) {
++			size_t line, col;
++			unsigned char bad_char;
++			find_first_encoding_error(src, src_len, default_encoding, enc, &line, &col, &bad_char);
++			warning(_("best-effort conversion used for '%s' from %s to %s at line %zu, col %zu (char: 0x%02x)"),
++				path, enc, default_encoding, line, col, bad_char);
++		}
 +	}
  	if (!dst) {
  		/*
  		 * We could add the blob "as-is" to Git. However, on checkout
-@@ -420,12 +449,19 @@ static int encode_to_git(const char *path, const char *src, size_t src_len,
+@@ -420,12 +456,19 @@ static int encode_to_git(const char *path, const char *src, size_t src_len,
  		 * would fail and we would leave the user with a messed-up
  		 * working tree. Let's try to avoid this by screaming loud.
  		 */
@@ -108,7 +115,7 @@ index c7d6a85..c57c165 100644
 +		}
 +		size_t line, col;
 +		unsigned char bad_char;
-+		find_first_non_ascii(src, src_len, &line, &col, &bad_char);
++		find_first_encoding_error(src, src_len, default_encoding, enc, &line, &col, &bad_char);
 +
 +		const char* msg = _("failed to encode '%s' from %s to %s at line %zu, col %zu (char: 0x%02x)");
  		if (die_on_error)
@@ -122,7 +129,7 @@ index c7d6a85..c57c165 100644
  		}
  	}
  	trace_encoding("destination", path, default_encoding, dst, dst_len);
-@@ -476,24 +512,40 @@ static int encode_to_git(const char *path, const char *src, size_t src_len,
+@@ -476,24 +519,47 @@ static int encode_to_git(const char *path, const char *src, size_t src_len,
  }
  
  static int encode_to_worktree(const char *path, const char *src, size_t src_len,
@@ -157,18 +164,25 @@ index c7d6a85..c57c165 100644
 -		return 0;
 +		dst = reencode_string_len_translit(src, src_len, enc, default_encoding,
 +						  &dst_len);
++		if (dst) {
++			size_t line, col;
++			unsigned char bad_char;
++			find_first_encoding_error(src, src_len, enc, default_encoding, &line, &col, &bad_char);
++			warning(_("best-effort conversion used for '%s' from %s to %s at line %zu, col %zu (char: 0x%02x)"),
++				path, default_encoding, enc, line, col, bad_char);
++		}
 +	}
 +	if (!dst) {
 +		size_t line, col;
 +		unsigned char bad_char;
-+		find_first_non_ascii(src, src_len, &line, &col, &bad_char);
++		find_first_encoding_error(src, src_len, enc, default_encoding, &line, &col, &bad_char);
 +		error(_("failed to encode '%s' from %s to %s at line %zu, col %zu (char: 0x%02x)"),
 +		      path, default_encoding, enc, line, col, bad_char);
 +		return -1;
  	}
  
  	strbuf_attach(buf, dst, dst_len, dst_len + 1);
-@@ -581,7 +633,7 @@ static int crlf_to_git(struct index_state *istate,
+@@ -581,7 +647,7 @@ static int crlf_to_git(struct index_state *istate,
  	} else {
  		do {
  			unsigned char c = *src++;
@@ -177,7 +191,7 @@ index c7d6a85..c57c165 100644
  				*dst++ = c;
  		} while (--len);
  	}
-@@ -608,14 +660,17 @@ static int crlf_to_worktree(const char *src, size_t len, struct strbuf *buf,
+@@ -608,14 +674,17 @@ static int crlf_to_worktree(const char *src, size_t len, struct strbuf *buf,
  
  	strbuf_grow(buf, len + stats.lonelf);
  	for (;;) {
@@ -197,7 +211,7 @@ index c7d6a85..c57c165 100644
  		}
  		len -= nl + 1 - src;
  		src  = nl + 1;
-@@ -1257,13 +1312,10 @@ static const char *git_path_check_encoding(struct attr_check_item *check)
+@@ -1257,13 +1326,10 @@ static const char *git_path_check_encoding(struct attr_check_item *check)
  		die(_("true/false are no valid working-tree-encodings"));
  	}
  
@@ -212,7 +226,7 @@ index c7d6a85..c57c165 100644
  static enum convert_crlf_action git_path_check_crlf(struct attr_check_item *check)
  {
  	const char *value = check->value;
-@@ -1316,18 +1368,40 @@ static int git_path_check_ident(struct attr_check_item *check)
+@@ -1316,18 +1382,40 @@ static int git_path_check_ident(struct attr_check_item *check)
  
  static struct attr_check *check;
  
@@ -253,7 +267,7 @@ index c7d6a85..c57c165 100644
  
  	git_check_attr(istate, path, check);
  	ccheck = check->items;
-@@ -1348,6 +1422,9 @@ void convert_attrs(struct index_state *istate,
+@@ -1348,6 +1436,9 @@ void convert_attrs(struct index_state *istate,
  			ca->crlf_action = CRLF_TEXT_CRLF;
  	}
  	ca->working_tree_encoding = git_path_check_encoding(ccheck + 5);
@@ -263,7 +277,7 @@ index c7d6a85..c57c165 100644
  
  	/* Save attr and make a decision for action */
  	ca->attr_action = ca->crlf_action;
-@@ -1439,13 +1516,13 @@ int convert_to_git(struct index_state *istate,
+@@ -1439,13 +1530,13 @@ int convert_to_git(struct index_state *istate,
  	if (!ret && ca.drv && ca.drv->required)
  		die(_("%s: clean filter '%s' failed"), path, ca.drv->name);
  
@@ -280,7 +294,7 @@ index c7d6a85..c57c165 100644
  		src = dst->buf;
  		len = dst->len;
  	}
-@@ -1472,7 +1549,7 @@ void convert_to_git_filter_fd(struct index_state *istate,
+@@ -1472,7 +1563,7 @@ void convert_to_git_filter_fd(struct index_state *istate,
  	if (!apply_filter(path, NULL, 0, fd, dst, ca.drv, CAP_CLEAN, NULL, NULL))
  		die(_("%s: clean filter '%s' failed"), path, ca.drv->name);
  
@@ -289,7 +303,7 @@ index c7d6a85..c57c165 100644
  	crlf_to_git(istate, path, dst->buf, dst->len, dst, ca.crlf_action, conv_flags);
  	ident_to_git(dst->buf, dst->len, dst, ca.ident);
  }
-@@ -1487,7 +1564,7 @@ static int convert_to_working_tree_ca_internal(const struct conv_attrs *ca,
+@@ -1487,7 +1578,7 @@ static int convert_to_working_tree_ca_internal(const struct conv_attrs *ca,
  	int ret = 0, ret_filter = 0;
  
  	ret |= ident_to_worktree(src, len, dst, ca->ident);
@@ -298,7 +312,7 @@ index c7d6a85..c57c165 100644
  		src = dst->buf;
  		len = dst->len;
  	}
-@@ -1498,16 +1575,19 @@ static int convert_to_working_tree_ca_internal(const struct conv_attrs *ca,
+@@ -1498,16 +1589,19 @@ static int convert_to_working_tree_ca_internal(const struct conv_attrs *ca,
  	 */
  	if ((ca->drv && (ca->drv->smudge || ca->drv->process)) || !normalizing) {
  		ret |= crlf_to_worktree(src, len, dst, ca->crlf_action);
@@ -321,7 +335,7 @@ index c7d6a85..c57c165 100644
  	}
  
  	ret_filter = apply_filter(
-@@ -1546,7 +1626,7 @@ int renormalize_buffer(struct index_state *istate, const char *path,
+@@ -1546,7 +1640,7 @@ int renormalize_buffer(struct index_state *istate, const char *path,
  	convert_attrs(istate, &ca, path);
  	ret = convert_to_working_tree_ca_internal(&ca, path, src, len, dst, 1,
  						  NULL, NULL);
@@ -330,7 +344,7 @@ index c7d6a85..c57c165 100644
  		src = dst->buf;
  		len = dst->len;
  	}
-@@ -2058,3 +2138,107 @@ enum conv_attrs_classification classify_conv_attrs(const struct conv_attrs *ca)
+@@ -2058,3 +2152,107 @@ enum conv_attrs_classification classify_conv_attrs(const struct conv_attrs *ca)
  
  	return CA_CLASS_STREAMABLE;
  }

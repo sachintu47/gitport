@@ -7,7 +7,7 @@ index b67fb02..1918ff3 100644
  	for (i = 0; i < nr_threads; i++) {
  		thread_data[i].pack_fd = xopen(curr_pack, O_RDONLY);
 +#ifdef __MVS__
-+		__disableautocvt(thread_data[i].pack_fd);
++		/* __disableautocvt(thread_data[i].pack_fd); */
 +#endif
  	}
  
@@ -25,7 +25,7 @@ index b67fb02..1918ff3 100644
  	} else {
  		input_fd = xopen(pack_name, O_RDONLY);
 +#ifdef __MVS__
-+		__disableautocvt(input_fd);
++		/* __disableautocvt(input_fd); */
 +#endif
  		output_fd = -1;
  		nothread_data.pack_fd = input_fd;

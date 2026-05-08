@@ -1,5 +1,5 @@
 diff --git a/utf8.c b/utf8.c
-index 96460cc..6ddfac1 100644
+index 96460cc..e99160a 100644
 --- a/utf8.c
 +++ b/utf8.c
 @@ -1,6 +1,8 @@
@@ -11,9 +11,30 @@ index 96460cc..6ddfac1 100644
  #include "strbuf.h"
  #include "utf8.h"
  
-@@ -620,6 +622,70 @@ char *reencode_string_len(const char *in, size_t insz,
- 		memcpy(out, bom_str, bom_len);
- 	return out;
+@@ -568,6 +570,20 @@ char *reencode_string_len(const char *in, size_t insz,
+ 	iconv_t conv;
+ 	char *out;
+ 	const char *bom_str = NULL;
++
++#ifdef __MVS__
++	if (utf8_ccsid == 819) {
++		/* HACK: For backwards compat UTF CCSID=819, ISO8859-1 really means utf-8 in the z/OS world */
++		if (in_encoding && !strcasecmp("ISO8859-1", in_encoding)) {
++			in_encoding = "UTF-8";
++			out_encoding = "UTF-8";
++		}
++		if (out_encoding && !strcasecmp("ISO8859-1", out_encoding)) {
++			in_encoding = "UTF-8";
++			out_encoding = "UTF-8";
++		}
++	}
++#endif
+ 	size_t bom_len = 0;
+ 
+ 	if (!in_encoding)
+@@ -837,3 +853,116 @@ void strbuf_utf8_align(struct strbuf *buf, align_type position, unsigned int wid
+ 	} else if (position == ALIGN_RIGHT)
+ 		strbuf_addf(buf, "%*s", width + utf8_compensation, s);
  }
 +
 +char *reencode_string_len_translit(const char *in, size_t insz,
@@ -79,37 +100,52 @@ index 96460cc..6ddfac1 100644
 +		memcpy(out, bom_str, bom_len);
 +	return out;
 +}
- #endif
- 
- static int has_bom_prefix(const char *data, size_t len,
-@@ -817,6 +883,30 @@ int skip_utf8_bom(char **text, size_t len)
- 	return 1;
- }
- 
-+void find_first_non_ascii(const char *src, size_t src_len, 
-+			  size_t *line_out, size_t *col_out, 
-+			  unsigned char *bad_char_out)
++
++void find_first_encoding_error(const char *src, size_t src_len,
++			      const char *to, const char *from,
++			      size_t *line_out, size_t *col_out,
++			      unsigned char *bad_char_out)
 +{
 +	size_t line = 1, col = 0;
-+	unsigned char bad_char = 0;
-+	for (size_t i = 0; i < src_len; i++) {
-+		if (src[i] == '\n' || is_ebcdic_newline(src[i])) {
++	size_t fail_pos = src_len;
++	iconv_t cd = iconv_open(to, from);
++
++	if (cd != (iconv_t)-1) {
++		const char *inbuf = src;
++		size_t inbytesleft = src_len;
++		char outbuf[256];
++		char *outptr = outbuf;
++		size_t outbytesleft = sizeof(outbuf);
++
++		while (inbytesleft > 0) {
++			size_t res = iconv(cd, (char **)&inbuf, &inbytesleft, &outptr, &outbytesleft);
++			if (res == (size_t)-1) {
++				if (errno == E2BIG) {
++					outptr = outbuf;
++					outbytesleft = sizeof(outbuf);
++					continue;
++				}
++				fail_pos = inbuf - src;
++				break;
++			}
++			outptr = outbuf;
++			outbytesleft = sizeof(outbuf);
++		}
++		iconv_close(cd);
++	}
++
++	for (size_t i = 0; i < fail_pos; i++) {
++		if (src[i] == '\n') {
 +			line++;
 +			col = 0;
 +		} else {
 +			col++;
 +		}
-+		/* Try to find the first character that iconv would reject (non-ASCII) */
-+		if ((unsigned char)src[i] > 0x7F) {
-+			bad_char = (unsigned char)src[i];
-+			break;
-+		}
++	}
++	if (fail_pos < src_len) {
++		*bad_char_out = (unsigned char)src[fail_pos];
++		col++;
 +	}
 +	*line_out = line;
 +	*col_out = col;
-+	*bad_char_out = bad_char;
 +}
-+
- void strbuf_utf8_align(struct strbuf *buf, align_type position, unsigned int width,
- 		       const char *s)
- {
