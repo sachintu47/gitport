@@ -1,5 +1,5 @@
 diff --git a/utf8.c b/utf8.c
-index 96460cc..e99160a 100644
+index 96460cc..2a15cf7 100644
 --- a/utf8.c
 +++ b/utf8.c
 @@ -1,6 +1,8 @@
@@ -11,10 +11,10 @@ index 96460cc..e99160a 100644
  #include "strbuf.h"
  #include "utf8.h"
  
-@@ -568,6 +570,20 @@ char *reencode_string_len(const char *in, size_t insz,
+@@ -567,6 +569,20 @@ char *reencode_string_len(const char *in, size_t insz,
+ {
  	iconv_t conv;
  	char *out;
- 	const char *bom_str = NULL;
 +
 +#ifdef __MVS__
 +	if (utf8_ccsid == 819) {
@@ -29,10 +29,10 @@ index 96460cc..e99160a 100644
 +		}
 +	}
 +#endif
+ 	const char *bom_str = NULL;
  	size_t bom_len = 0;
  
- 	if (!in_encoding)
-@@ -837,3 +853,116 @@ void strbuf_utf8_align(struct strbuf *buf, align_type position, unsigned int wid
+@@ -837,3 +853,154 @@ void strbuf_utf8_align(struct strbuf *buf, align_type position, unsigned int wid
  	} else if (position == ALIGN_RIGHT)
  		strbuf_addf(buf, "%*s", width + utf8_compensation, s);
  }
@@ -43,6 +43,20 @@ index 96460cc..e99160a 100644
 +{
 +	iconv_t conv;
 +	char *out;
++
++#ifdef __MVS__
++	if (utf8_ccsid == 819) {
++		/* HACK: For backwards compat UTF CCSID=819, ISO8859-1 really means utf-8 in the z/OS world */
++		if (in_encoding && !strcasecmp("ISO8859-1", in_encoding)) {
++			in_encoding = "UTF-8";
++			out_encoding = "UTF-8";
++		}
++		if (out_encoding && !strcasecmp("ISO8859-1", out_encoding)) {
++			in_encoding = "UTF-8";
++			out_encoding = "UTF-8";
++		}
++	}
++#endif
 +	const char *bom_str = NULL;
 +	size_t bom_len = 0;
 +	char *out_encoding_translit;
@@ -148,4 +162,28 @@ index 96460cc..e99160a 100644
 +	}
 +	*line_out = line;
 +	*col_out = col;
++}
++
++void find_first_non_ascii(const char *src, size_t src_len, 
++			  size_t *line_out, size_t *col_out, 
++			  unsigned char *bad_char_out)
++{
++	size_t line = 1, col = 0;
++	unsigned char bad_char = 0;
++	for (size_t i = 0; i < src_len; i++) {
++		if (src[i] == '\n' || is_ebcdic_newline(src[i])) {
++			line++;
++			col = 0;
++		} else {
++			col++;
++		}
++		/* Try to find the first character that iconv would reject (non-ASCII) */
++		if ((unsigned char)src[i] > 0x7F) {
++			bad_char = (unsigned char)src[i];
++			break;
++		}
++	}
++	*line_out = line;
++	*col_out = col;
++	*bad_char_out = bad_char;
 +}

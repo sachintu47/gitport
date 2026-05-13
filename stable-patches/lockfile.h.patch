@@ -1,8 +1,8 @@
 diff --git a/lockfile.h b/lockfile.h
-index 1bb9926..de6143c 100644
+index e7233f2..efa9a0a 100644
 --- a/lockfile.h
 +++ b/lockfile.h
-@@ -148,6 +148,11 @@ struct lock_file {
+@@ -165,6 +165,11 @@ extern int lockfile_pid_enabled;
   */
  #define LOCK_REPORT_ON_ERROR 4
  

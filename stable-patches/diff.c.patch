@@ -1,8 +1,8 @@
 diff --git a/diff.c b/diff.c
-index a68ddd2..3054b38 100644
+index 397e38b..3fbd3e0 100644
 --- a/diff.c
 +++ b/diff.c
-@@ -4194,6 +4194,7 @@ int diff_populate_filespec(struct repository *r,
+@@ -4478,6 +4478,7 @@ int diff_populate_filespec(struct repository *r,
  	int check_binary = options ? options->check_binary : 0;
  	int err = 0;
  	int conv_flags = global_conv_flags_eol;
@@ -10,7 +10,7 @@ index a68ddd2..3054b38 100644
  	/*
  	 * demote FAIL to WARN to allow inspecting the situation
  	 * instead of refusing.
-@@ -4267,9 +4268,18 @@ int diff_populate_filespec(struct repository *r,
+@@ -4551,9 +4552,18 @@ int diff_populate_filespec(struct repository *r,
  			s->is_binary = 1;
  			return 0;
  		}
@@ -29,7 +29,7 @@ index a68ddd2..3054b38 100644
  		s->data = xmmap(NULL, s->size, PROT_READ, MAP_PRIVATE, fd, 0);
  		close(fd);
  		s->should_munmap = 1;
-@@ -4277,7 +4287,7 @@ int diff_populate_filespec(struct repository *r,
+@@ -4561,7 +4571,7 @@ int diff_populate_filespec(struct repository *r,
  		/*
  		 * Convert from working tree format to canonical git format
  		 */
@@ -38,7 +38,7 @@ index a68ddd2..3054b38 100644
  			size_t size = 0;
  			munmap(s->data, s->size);
  			s->should_munmap = 0;
-@@ -4369,13 +4379,21 @@ static void prep_temp_blob(struct index_state *istate,
+@@ -4653,13 +4663,21 @@ static void prep_temp_blob(struct index_state *istate,
  	temp->tempfile = mks_tempfile_dt("git-blob-XXXXXX", base);
  	if (!temp->tempfile)
  		die_errno("unable to create temp-file");

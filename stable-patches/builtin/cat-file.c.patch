@@ -1,5 +1,5 @@
 diff --git a/builtin/cat-file.c b/builtin/cat-file.c
-index df8e87a..d40b845 100644
+index d9fbad5..6f975e6 100644
 --- a/builtin/cat-file.c
 +++ b/builtin/cat-file.c
 @@ -83,7 +83,8 @@ static int filter_object(const char *path, unsigned mode,

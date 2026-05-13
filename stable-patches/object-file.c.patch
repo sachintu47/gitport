@@ -1,130 +1,15 @@
 diff --git a/object-file.c b/object-file.c
-index e7e4c33..b64b44b 100644
+index 2acc952..d78fb1d 100644
 --- a/object-file.c
 +++ b/object-file.c
-@@ -154,7 +154,7 @@ int stream_object_signature(struct repository *r, const struct object_id *oid)
- 		if (readlen < 0) {
- 			odb_read_stream_close(st);
- 			return -1;
--		}
-+	}
- 		if (!readlen)
- 			break;
- 		git_hash_update(&c, buf, readlen);
-@@ -225,7 +225,7 @@ static void *map_fd(int fd, const char *path, unsigned long *size)
- 			error(_("object file %s is empty"), path);
- 			close(fd);
- 			return NULL;
--		}
-+	}
- 		map = xmmap(NULL, *size, PROT_READ, MAP_PRIVATE, fd, 0);
- 	}
- 	close(fd);
-@@ -329,7 +329,7 @@ static void *unpack_loose_rest(git_zstream *stream,
- 			obj_read_unlock();
- 			status = git_inflate(stream, Z_FINISH);
- 			obj_read_lock();
--		}
-+	}
- 	}
- 
- 	if (status != Z_STREAM_END) {
-@@ -393,7 +393,7 @@ static int parse_loose_header(const char *hdr, struct object_info *oi)
- 				break;
- 			hdr++;
- 			size = st_add(st_mult(size, 10), c);
--		}
-+	}
- 	}
- 
- 	if (oi->sizep)
-@@ -440,12 +440,12 @@ int odb_source_loose_read_object_info(struct odb_source *source,
- 		if ((!oi || !oi->disk_sizep) && (flags & OBJECT_INFO_QUICK)) {
- 			ret = quick_has_loose(source->loose, oid) ? 0 : -1;
- 			goto out;
--		}
-+	}
- 
- 		if (stat_loose_object(source->loose, oid, &st, &path) < 0) {
- 			ret = -1;
- 			goto out;
--		}
-+	}
- 
- 		if (oi && oi->disk_sizep)
- 			*oi->disk_sizep = st.st_size;
-@@ -483,7 +483,7 @@ int odb_source_loose_read_object_info(struct odb_source *source,
- 		if (parse_loose_header(hdr, oi) < 0) {
- 			ret = error(_("unable to parse %s header"), oid_to_hex(oid));
- 			goto corrupt;
--		}
-+	}
- 
- 		if (*oi->typep < 0)
- 			die(_("invalid object type"));
-@@ -493,8 +493,8 @@ int odb_source_loose_read_object_info(struct odb_source *source,
- 			if (!*oi->contentp) {
- 				ret = -1;
- 				goto corrupt;
--			}
- 		}
-+	}
- 
- 		break;
- 	case ULHR_BAD:
-@@ -588,19 +588,19 @@ static int check_collision(const char *source, const char *dest)
- 		if (sz_a < 0) {
- 			ret = error_errno(_("unable to read %s"), source);
- 			goto out;
--		}
-+	}
- 
- 		sz_b = read_in_full(fd_dest, buf_dest, sizeof(buf_dest));
- 		if (sz_b < 0) {
- 			ret = error_errno(_("unable to read %s"), dest);
- 			goto out;
--		}
-+	}
- 
- 		if (sz_a != sz_b || memcmp(buf_source, buf_dest, sz_a)) {
- 			ret = error(_("files '%s' and '%s' differ in contents"),
- 				    source, dest);
- 			goto out;
--		}
-+	}
- 
- 		if ((size_t) sz_a < sizeof(buf_source))
- 			break;
-@@ -668,7 +668,7 @@ int finalize_object_file_flags(struct repository *repo,
- 			unlink_or_warn(tmpfile);
- 			errno = saved_errno;
- 			return error_errno(_("unable to write file %s"), filename);
--		}
-+	}
- 		if (!(flags & FOF_SKIP_COLLISION_CHECK)) {
- 			ret = check_collision(tmpfile, filename);
- 			if (ret == CHECK_COLLISION_DEST_VANISHED) {
-@@ -676,10 +676,10 @@ int finalize_object_file_flags(struct repository *repo,
- 					return error(_("unable to write repeatedly vanishing file %s"),
- 						     filename);
- 				goto retry;
--			}
-+		}
- 			else if (ret)
- 				return -1;
--		}
-+	}
- 		unlink_or_warn(tmpfile);
- 	}
- 
-@@ -826,11 +826,20 @@ static int create_tmpfile(struct repository *repo,
+@@ -858,11 +858,19 @@ static int create_tmpfile(struct repository *repo,
  			  struct strbuf *tmp, const char *filename)
  {
  	int fd, dirlen = directory_size(filename);
+-
 +#ifdef __MVS__
 +	struct stat st;
 +#endif
- 
  	strbuf_reset(tmp);
  	strbuf_add(tmp, filename, dirlen);
  	strbuf_addstr(tmp, "tmp_obj_XXXXXX");
@@ -138,7 +23,7 @@ index e7e4c33..b64b44b 100644
  	if (fd < 0 && dirlen && errno == ENOENT) {
  		/*
  		 * Make sure the directory exists; note that the contents
-@@ -848,6 +857,12 @@ static int create_tmpfile(struct repository *repo,
+@@ -880,6 +888,12 @@ static int create_tmpfile(struct repository *repo,
  		/* Try again */
  		strbuf_addstr(tmp, "/tmp_obj_XXXXXX");
  		fd = git_mkstemp_mode(tmp->buf, 0444);
@@ -151,100 +36,20 @@ index e7e4c33..b64b44b 100644
  	}
  	return fd;
  }
-@@ -1074,7 +1089,7 @@ int odb_source_loose_write_stream(struct odb_source *source,
- 			/* All data has been read. */
- 			if (in_stream->is_finished)
- 				flush = 1;
--		}
-+	}
- 		ret = write_loose_object_common(source, &c, &compat_c, &stream, flush, in0, fd,
- 						compressed, sizeof(compressed));
- 		/*
-@@ -1120,7 +1135,7 @@ int odb_source_loose_write_stream(struct odb_source *source,
- 			err = error_errno(_("unable to create directory %s"), dir.buf);
- 			strbuf_release(&dir);
- 			goto cleanup;
--		}
-+	}
- 		strbuf_release(&dir);
- 	}
- 
-@@ -1158,7 +1173,7 @@ int odb_source_loose_write_object(struct odb_source *source,
- 			hash_object_file(compat, converted.buf, converted.len,
- 					 type, &compat_oid);
- 			strbuf_release(&converted);
--		}
-+	}
- 	}
- 
- 	/* Normally if we have it in the pack then we do not bother writing
-@@ -1243,11 +1258,12 @@ static int index_mem(struct index_state *istate,
+@@ -1276,8 +1290,10 @@ static int index_mem(struct index_state *istate,
  	 * Convert blobs to git internal format
  	 */
  	if ((type == OBJ_BLOB) && path) {
 -		if (convert_to_git(istate, path, buf, size, &nbuf,
 -				   get_conv_flags(flags))) {
-+		int ret = convert_to_git(istate, path, buf, size, &nbuf,
++		ret = convert_to_git(istate, path, buf, size, &nbuf,
 +				   get_conv_flags(flags));
-+		if (ret > 0) {
++		if(ret > 0)
++		{
  			buf = nbuf.buf;
  			size = nbuf.len;
--		}
-+	}
- 	}
- 	if (flags & INDEX_FORMAT_CHECK) {
- 		struct fsck_options opts = FSCK_OPTIONS_DEFAULT;
-@@ -1426,11 +1442,11 @@ static int stream_blob_to_pack(struct transaction_packfile *state,
- 				if (hsize)
- 					git_hash_update(ctx, ibuf, hsize);
- 				*already_hashed_to = offset;
--			}
-+		}
- 			s.next_in = ibuf;
- 			s.avail_in = rsize;
- 			size -= rsize;
--		}
-+	}
- 
- 		status = git_deflate(&s, size ? 0 : Z_FINISH);
- 
-@@ -1444,14 +1460,14 @@ static int stream_blob_to_pack(struct transaction_packfile *state,
- 				    pack_size_limit_cfg < state->offset + written) {
- 					git_deflate_abort(&s);
- 					return -1;
--				}
-+			}
- 
- 				hashwrite(state->f, obuf, written);
- 				state->offset += written;
--			}
-+		}
- 			s.next_out = obuf;
- 			s.avail_out = sizeof(obuf);
--		}
-+	}
- 
- 		switch (status) {
- 		case Z_OK:
-@@ -1460,7 +1476,7 @@ static int stream_blob_to_pack(struct transaction_packfile *state,
- 			continue;
- 		default:
- 			die("unexpected deflate failure: %d", status);
--		}
-+	}
- 	}
- 	git_deflate_end(&s);
- 	return 0;
-@@ -1572,7 +1588,7 @@ static int index_blob_packfile_transaction(struct odb_transaction *transaction,
- 			hashfile_checkpoint(state->f, &checkpoint);
- 			idx->offset = state->offset;
- 			crc32_begin(state->f);
--		}
-+	}
- 		if (!stream_blob_to_pack(state, &ctx, &already_hashed_to,
- 					 fd, size, path, flags))
- 			break;
-@@ -1649,12 +1665,21 @@ int index_path(struct index_state *istate, struct object_id *oid,
+ 		}
+@@ -1720,12 +1736,21 @@ int index_path(struct index_state *istate, struct object_id *oid,
  	int fd;
  	struct strbuf sb = STRBUF_INIT;
  	int rc = 0;
@@ -254,7 +59,7 @@ index e7e4c33..b64b44b 100644
  	switch (st->st_mode & S_IFMT) {
  	case S_IFREG:
 +#ifdef __MVS__
-+    validate_codeset(istate, path, &autocvtToASCII);
++	validate_codeset(istate, path, &autocvtToASCII);
 +#endif
  		fd = open(path, O_RDONLY);
  		if (fd < 0)
@@ -266,46 +71,3 @@ index e7e4c33..b64b44b 100644
  		if (index_fd(istate, oid, fd, st, OBJ_BLOB, path, flags) < 0)
  			return error(_("%s: failed to insert into database"),
  				     path);
-@@ -1745,15 +1770,15 @@ static int for_each_file_in_obj_subdir(unsigned int subdir_nr,
- 				r = obj_cb(&oid, path->buf, data);
- 				if (r)
- 					break;
--			}
--			continue;
- 		}
-+			continue;
-+	}
- 
- 		if (cruft_cb) {
- 			r = cruft_cb(de->d_name, path->buf, data);
- 			if (r)
- 				break;
--		}
-+	}
- 	}
- 	closedir(dir);
- 
-@@ -1967,7 +1992,7 @@ int read_loose_object(struct repository *repo,
- 		if (!*contents) {
- 			error(_("unable to unpack contents of %s"), path);
- 			goto out_inflate;
--		}
-+	}
- 		hash_object_file(repo->hash_algo,
- 				 *contents, *size,
- 				 *oi->typep, real_oid);
-@@ -2082,12 +2107,12 @@ static ssize_t read_istream_loose(struct odb_read_stream *_st, char *buf, size_t
- 			git_inflate_end(&st->z);
- 			st->z_state = ODB_LOOSE_READ_STREAM_DONE;
- 			break;
--		}
-+	}
- 		if (status != Z_OK && (status != Z_BUF_ERROR || total_read < sz)) {
- 			git_inflate_end(&st->z);
- 			st->z_state = ODB_LOOSE_READ_STREAM_ERROR;
- 			return -1;
--		}
-+	}
- 	}
- 	return total_read;
- }

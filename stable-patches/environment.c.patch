@@ -1,8 +1,8 @@
 diff --git a/environment.c b/environment.c
-index 8ffbf92..dedabe1 100644
+index fc3ed8b..705ad82 100644
 --- a/environment.c
 +++ b/environment.c
-@@ -26,6 +26,7 @@
+@@ -27,6 +27,7 @@
  #include "repository.h"
  #include "config.h"
  #include "refs.h"
@@ -10,7 +10,7 @@ index 8ffbf92..dedabe1 100644
  #include "fmt-merge-msg.h"
  #include "commit.h"
  #include "strvec.h"
-@@ -57,6 +58,11 @@ char *git_attributes_file;
+@@ -57,6 +58,11 @@ char *apply_default_ignorewhitespace;
  int zlib_compression_level = Z_BEST_SPEED;
  int pack_compression_level = Z_DEFAULT_COMPRESSION;
  int fsync_object_files = -1;

@@ -1,8 +1,8 @@
 diff --git a/lockfile.c b/lockfile.c
-index 67082a9..d6977ae 100644
+index 7add2f1..4ae19e2 100644
 --- a/lockfile.c
 +++ b/lockfile.c
-@@ -2,10 +2,13 @@
+@@ -2,6 +2,8 @@
   * Copyright (c) 2005, Junio C Hamano
   */
  
@@ -11,24 +11,45 @@ index 67082a9..d6977ae 100644
  #include "git-compat-util.h"
  #include "abspath.h"
  #include "gettext.h"
- #include "lockfile.h"
+@@ -9,6 +11,7 @@
+ #include "parse.h"
+ #include "strbuf.h"
+ #include "wrapper.h"
 +#include "environment.h"
  
  /*
   * path = absolute or relative path name
-@@ -83,6 +86,15 @@ static int lock_file(struct lock_file *lk, const char *path, int flags,
+@@ -168,6 +171,7 @@ static int lock_file(struct lock_file *lk, const char *path, int flags,
+ 	struct strbuf base_path = STRBUF_INIT;
+ 	struct strbuf lock_path = STRBUF_INIT;
+ 	struct strbuf pid_path = STRBUF_INIT;
++	struct stat st;
  
- 	strbuf_addstr(&filename, LOCK_SUFFIX);
- 	lk->tempfile = create_tempfile_mode(filename.buf, mode);
+ 	strbuf_addstr(&base_path, path);
+ 	if (!(flags & LOCK_NO_DEREF))
+@@ -177,8 +181,24 @@ static int lock_file(struct lock_file *lk, const char *path, int flags,
+ 	get_pid_path(&pid_path, base_path.buf);
+ 
+ 	lk->tempfile = create_tempfile_mode(lock_path.buf, mode);
+-	if (lk->tempfile)
 +#ifdef __MVS__
-+    struct stat st;
-+	if (lk->tempfile && fstat(lk->tempfile->fd, &st) >= 0 && S_ISREG(st.st_mode)) {
++	if (lk->tempfile && fstat(lk->tempfile->fd, &st) >= 0 && S_ISREG(st.st_mode))
++	{
 +		if (flags & LOCK_TAG_TEXT)
 +			__chgfdccsid(lk->tempfile->fd, utf8_ccsid);
 +		else
 +			__setfdbinary(lk->tempfile->fd);
++
+ 		lk->pid_tempfile = create_lock_pid_file(pid_path.buf, mode);
++		if (lk->pid_tempfile && fstat(lk->pid_tempfile->fd, &st) >= 0 && S_ISREG(st.st_mode))
++		{
++			if (flags & LOCK_TAG_TEXT)
++				__chgfdccsid(lk->pid_tempfile->fd, utf8_ccsid);
++			else
++				__setfdbinary(lk->pid_tempfile->fd);
++		}
 +	}
 +#endif
- 	strbuf_release(&filename);
- 	return lk->tempfile ? lk->tempfile->fd : -1;
- }
+ 
+ 	strbuf_release(&base_path);
+ 	strbuf_release(&lock_path);

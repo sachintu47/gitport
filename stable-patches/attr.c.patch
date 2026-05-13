@@ -1,7 +1,7 @@
-diff --git i/attr.c w/attr.c
-index 0bd2750..9e17884 100644
---- i/attr.c
-+++ w/attr.c
+diff --git a/attr.c b/attr.c
+index 7536954..b15e1aa 100644
+--- a/attr.c
++++ b/attr.c
 @@ -873,9 +873,10 @@ static struct attr_stack *read_attr(struct index_state *istate,
  
  const char *git_attr_system_file(void)

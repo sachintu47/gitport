@@ -1,5 +1,5 @@
 diff --git a/apply.c b/apply.c
-index 3de4aa4..031a6e1 100644
+index 4aa1694..2d0ccd6 100644
 --- a/apply.c
 +++ b/apply.c
 @@ -33,6 +33,7 @@
@@ -10,7 +10,7 @@ index 3de4aa4..031a6e1 100644
  #include "apply.h"
  #include "entry.h"
  #include "setup.h"
-@@ -4446,12 +4447,23 @@ static int try_create_file(struct apply_state *state, const char *path,
+@@ -4521,12 +4522,23 @@ static int try_create_file(struct apply_state *state, const char *path,
  	if (fd < 0)
  		return 1;
  

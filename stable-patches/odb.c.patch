@@ -1,14 +1,9 @@
 diff --git a/odb.c b/odb.c
-index ac70b6a..699e986 100644
+index 9b28fe2..404d706 100644
 --- a/odb.c
 +++ b/odb.c
-@@ -66,9 +66,13 @@ static const struct cached_object *find_cached_object(struct object_database *ob
- }
- 
- int odb_mkstemp(struct object_database *odb,
--		struct strbuf *temp_filename, const char *pattern)
-+		 struct strbuf *temp_filename,
-+		 const char *pattern)
+@@ -69,6 +69,9 @@ int odb_mkstemp(struct object_database *odb,
+ 		struct strbuf *temp_filename, const char *pattern)
  {
  	int fd;
 +#ifdef __MVS__
@@ -17,7 +12,7 @@ index ac70b6a..699e986 100644
  	/*
  	 * we let the umask do its job, don't try to be more
  	 * restrictive except to remove write permission.
-@@ -76,6 +80,12 @@ int odb_mkstemp(struct object_database *odb,
+@@ -76,6 +79,12 @@ int odb_mkstemp(struct object_database *odb,
  	int mode = 0444;
  	repo_git_path_replace(odb->repo, temp_filename, "objects/%s", pattern);
  	fd = git_mkstemp_mode(temp_filename->buf, mode);
@@ -30,7 +25,7 @@ index ac70b6a..699e986 100644
  	if (0 <= fd)
  		return fd;
  
-@@ -83,9 +93,17 @@ int odb_mkstemp(struct object_database *odb,
+@@ -83,7 +92,14 @@ int odb_mkstemp(struct object_database *odb,
  	/* some mkstemp implementations erase temp_filename on failure */
  	repo_git_path_replace(odb->repo, temp_filename, "objects/%s", pattern);
  	safe_create_leading_directories(odb->repo, temp_filename->buf);
@@ -45,194 +40,4 @@ index ac70b6a..699e986 100644
 +	return fd;
  }
  
-+
  /*
-  * Return non-zero iff the path is usable as an alternate object database.
-  */
-@@ -152,18 +170,18 @@ static void parse_alternates(const char *string,
- 		if (*string == '#') {
- 			/* comment; consume up to next separator */
- 			end = strchrnul(string, sep);
--		} else if (*string == '"' && !unquote_c_style(&buf, string, &end)) {
-+	} else if (*string == '"' && !unquote_c_style(&buf, string, &end)) {
- 			/*
- 			 * quoted path; unquote_c_style has copied the
- 			 * data for us and set "end". Broken quoting (e.g.,
- 			 * an entry that doesn't end with a quote) falls
- 			 * back to the unquoted case below.
- 			 */
--		} else {
-+	} else {
- 			/* normal, unquoted path */
- 			end = strchrnul(string, sep);
- 			strbuf_add(&buf, string, end - string);
--		}
-+	}
- 
- 		if (*end)
- 			end++;
-@@ -175,7 +193,7 @@ static void parse_alternates(const char *string,
- 		if (!is_absolute_path(buf.buf) && relative_base) {
- 			strbuf_realpath(&pathbuf, relative_base, 1);
- 			strbuf_addch(&pathbuf, '/');
--		}
-+	}
- 		strbuf_addbuf(&pathbuf, &buf);
- 
- 		strbuf_reset(&buf);
-@@ -183,7 +201,7 @@ static void parse_alternates(const char *string,
- 			error(_("unable to normalize alternate object path: %s"),
- 			      pathbuf.buf);
- 			continue;
--		}
-+	}
- 
- 		/*
- 		 * The trailing slash after the directory name is given by
-@@ -296,9 +314,9 @@ static int odb_source_write_alternate(struct odb_source *source,
- 			if (!strcmp(alternate, line.buf)) {
- 				found = 1;
- 				break;
--			}
--			fprintf_or_die(out, "%s\n", line.buf);
- 		}
-+			fprintf_or_die(out, "%s\n", line.buf);
-+	}
- 
- 		strbuf_release(&line);
- 		fclose(in);
-@@ -314,7 +332,7 @@ static int odb_source_write_alternate(struct odb_source *source,
- 		if (commit_lock_file(&lock)) {
- 			ret = error_errno(_("unable to move new alternates file into place"));
- 			goto out;
--		}
-+	}
- 	}
- 
- 	ret = 0;
-@@ -433,7 +451,7 @@ char *compute_alternate_path(const char *path, struct strbuf *err)
- 				      "checkout is not supported yet."),
- 				    path);
- 			goto out;
--		}
-+	}
- 
- 		strbuf_addf(err, _("reference repository '%s' is not a "
- 					"local repository."), path);
-@@ -517,7 +535,7 @@ static void fill_alternate_refs_command(struct repository *repo,
- 		if (!repo_config_get_value(repo, "core.alternateRefsPrefixes", &value)) {
- 			strvec_push(&cmd->args, "--");
- 			strvec_split(&cmd->args, value);
--		}
-+	}
- 	}
- 
- 	strvec_pushv(&cmd->env, (const char **)local_repo_env);
-@@ -547,7 +565,7 @@ static void read_alternate_refs(struct repository *repo,
- 			warning(_("invalid line while parsing alternate refs: %s"),
- 				line.buf);
- 			break;
--		}
-+	}
- 
- 		cb(&oid, payload);
- 	}
-@@ -703,7 +721,7 @@ static int do_oid_object_info_extended(struct object_database *odb,
- 			if (oi->contentp)
- 				*oi->contentp = xmemdupz(co->buf, co->size);
- 			oi->whence = OI_CACHED;
--		}
-+	}
- 		return 0;
- 	}
- 
-@@ -717,7 +735,7 @@ static int do_oid_object_info_extended(struct object_database *odb,
- 			if (!packfile_store_read_object_info(source->packfiles, real, oi, flags) ||
- 			    !odb_source_loose_read_object_info(source, real, oi, flags))
- 				return 0;
--		}
-+	}
- 
- 		/* Not a loose object; someone else may have just packed it. */
- 		if (!(flags & OBJECT_INFO_QUICK)) {
-@@ -725,7 +743,7 @@ static int do_oid_object_info_extended(struct object_database *odb,
- 			for (source = odb->sources; source; source = source->next)
- 				if (!packfile_store_read_object_info(source->packfiles, real, oi, flags))
- 					return 0;
--		}
-+	}
- 
- 		/*
- 		 * This might be an attempt at accessing a submodule object as
-@@ -744,7 +762,7 @@ static int do_oid_object_info_extended(struct object_database *odb,
- 			promisor_remote_get_direct(odb->repo, real, 1);
- 			already_retried = 1;
- 			continue;
--		}
-+	}
- 
- 		if (flags & OBJECT_INFO_DIE_IF_CORRUPT) {
- 			const struct packed_git *p;
-@@ -754,7 +772,7 @@ static int do_oid_object_info_extended(struct object_database *odb,
- 			if ((p = has_packed_and_bad(odb->repo, real)))
- 				die(_("packed object %s (stored in %s) is corrupt"),
- 				    oid_to_hex(real), p->pack_name);
--		}
-+	}
- 		return -1;
- 	}
- }
-@@ -792,7 +810,7 @@ static int oid_object_info_convert(struct repository *r,
- 			new_oi.contentp = &content;
- 			new_oi.sizep = &size;
- 			new_oi.typep = &type;
--		}
-+	}
- 		oi = &new_oi;
- 	}
- 
-@@ -814,7 +832,7 @@ static int oid_object_info_convert(struct repository *r,
- 				return -1;
- 			size = outbuf.len;
- 			content = strbuf_detach(&outbuf, NULL);
--		}
-+	}
- 		if (input_oi->sizep)
- 			*input_oi->sizep = size;
- 		if (input_oi->contentp)
-@@ -832,7 +850,7 @@ static int oid_object_info_convert(struct repository *r,
- 				    oid_to_hex(&delta_base_oid),
- 				    input_algo->name);
- 			return -1;
--		}
-+	}
- 	}
- 	input_oi->whence = new_oi.whence;
- 	input_oi->u = new_oi.u;
-@@ -938,7 +956,7 @@ void *odb_read_object_peeled(struct object_database *odb,
- 			if (actual_oid_return)
- 				oidcpy(actual_oid_return, &actual_oid);
- 			return buffer;
--		}
-+	}
- 		/* Handle references */
- 		else if (type == OBJ_COMMIT)
- 			ref_type = "tree ";
-@@ -947,7 +965,7 @@ void *odb_read_object_peeled(struct object_database *odb,
- 		else {
- 			free(buffer);
- 			return NULL;
--		}
-+	}
- 		ref_length = strlen(ref_type);
- 
- 		if (ref_length + odb->repo->hash_algo->hexsz > isize ||
-@@ -956,7 +974,7 @@ void *odb_read_object_peeled(struct object_database *odb,
- 				      odb->repo->hash_algo)) {
- 			free(buffer);
- 			return NULL;
--		}
-+	}
- 		free(buffer);
- 		/* Now we have the ID of the referred-to object in
- 		 * actual_oid.  Check again. */
