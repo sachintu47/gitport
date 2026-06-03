@@ -1,8 +1,8 @@
 diff --git a/environment.c b/environment.c
-index 8ffbf92..bef0b5d 100644
+index fc3ed8b..45fc8c7 100644
 --- a/environment.c
 +++ b/environment.c
-@@ -26,6 +26,7 @@
+@@ -27,6 +27,7 @@
  #include "repository.h"
  #include "config.h"
  #include "refs.h"
@@ -10,24 +10,40 @@ index 8ffbf92..bef0b5d 100644
  #include "fmt-merge-msg.h"
  #include "commit.h"
  #include "strvec.h"
-@@ -57,6 +58,10 @@ char *git_attributes_file;
+@@ -57,6 +58,12 @@ char *apply_default_ignorewhitespace;
  int zlib_compression_level = Z_BEST_SPEED;
  int pack_compression_level = Z_DEFAULT_COMPRESSION;
  int fsync_object_files = -1;
 +#ifdef __MVS__
 +int ignore_file_tags = 0;
++enum zos_encoding_fallback zos_encoding_fallback = ZOS_ENCODING_FALLBACK_FAIL;
++int zos_encoding_fallback_is_env_set = 0;
 +int utf8_ccsid = 1208;
 +#endif
  int use_fsync = -1;
  enum fsync_method fsync_method = FSYNC_METHOD_DEFAULT;
  enum fsync_component fsync_components = FSYNC_COMPONENTS_DEFAULT;
-@@ -406,6 +411,18 @@ int git_default_core_config(const char *var, const char *value,
+@@ -406,6 +413,32 @@ int git_default_core_config(const char *var, const char *value,
  		return 0;
  	}
  
 +#ifdef __MVS__
 +	if (!strcmp(var, "core.ignorefiletags")) {
 +		ignore_file_tags = git_config_bool(var, value);
++		return 0;
++	}
++
++	if (!strcasecmp(var, "core.zosencodingfallback")) {
++		if (zos_encoding_fallback_is_env_set)
++			return 0;
++		if (!value)
++			return config_error_nonbool(var);
++		if (!strcasecmp(value, "transliterate"))
++			zos_encoding_fallback = ZOS_ENCODING_FALLBACK_TRANSLITERATE;
++		else if (!strcasecmp(value, "fail"))
++			zos_encoding_fallback = ZOS_ENCODING_FALLBACK_FAIL;
++		else
++			return error(_("unknown core.zosEncodingFallback value: %s"), value);
 +		return 0;
 +	}
 +
