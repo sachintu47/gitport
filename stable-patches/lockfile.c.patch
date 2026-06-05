@@ -35,18 +35,12 @@ index 7add2f1..4ae19e2 100644
 +#ifdef __MVS__
 +	if (lk->tempfile && fstat(lk->tempfile->fd, &st) >= 0 && S_ISREG(st.st_mode))
 +	{
-+		if (flags & LOCK_TAG_TEXT)
-+			__chgfdccsid(lk->tempfile->fd, utf8_ccsid);
-+		else
-+			__setfdbinary(lk->tempfile->fd);
++		__chgfdccsid(lk->tempfile->fd, utf8_ccsid);
 +
  		lk->pid_tempfile = create_lock_pid_file(pid_path.buf, mode);
 +		if (lk->pid_tempfile && fstat(lk->pid_tempfile->fd, &st) >= 0 && S_ISREG(st.st_mode))
 +		{
-+			if (flags & LOCK_TAG_TEXT)
-+				__chgfdccsid(lk->pid_tempfile->fd, utf8_ccsid);
-+			else
-+				__setfdbinary(lk->pid_tempfile->fd);
++			__chgfdccsid(lk->pid_tempfile->fd, utf8_ccsid);
 +		}
 +	}
 +#endif
